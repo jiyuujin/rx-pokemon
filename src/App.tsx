@@ -1,24 +1,50 @@
 import React from 'react'
-import logo from './logo.svg'
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs'
+import { map } from 'rxjs/operators'
+import { useObservable } from 'rxjs-hooks'
 import './App.css'
+import './assets/gallery.css'
+
+import { Search } from './components/Search'
+import { CardList } from './components/CardList'
+
+const fetchPokemons = () => {
+    return fetch(
+        `${process.env.REACT_APP_POKEMON_API}/pokemon?limit=200&offset=200`
+    )
+        .then((response) => response.json())
+        .then((json) => json.results)
+}
+
+const useSearch = () =>
+    useObservable(
+        (word$) =>
+            word$.pipe(
+                debounceTime(400),
+                distinctUntilChanged(),
+                switchMap(() => fetchPokemons()),
+                map((result) => (result !== undefined ? result : []))
+            ),
+        [],
+        []
+    )
 
 function App() {
+    const data = useSearch()
+    const [searchText, setSearchText] = React.useState<string>('')
+
+    const handleInputClick = (newtext: string) => {
+        setSearchText(newtext)
+    }
+
     return (
         <div className="App">
-            <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
-                <p>
-                    Edit <code>src/App.js</code> and save to reload.
-                </p>
-                <a
-                    className="App-link"
-                    href="https://reactjs.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Learn React
-                </a>
-            </header>
+            <div className="search">
+                <Search text={searchText} setText={handleInputClick} />
+            </div>
+            <div className="gallery">
+                <CardList data={data} search={searchText} />
+            </div>
         </div>
     )
 }

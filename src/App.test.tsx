@@ -1,15 +1,21 @@
 import React from 'react'
-import renderer from 'react-test-renderer'
-import { render } from '@testing-library/react'
+import { map, delay } from 'rxjs/operators'
+import { TestScheduler } from 'rxjs/testing'
+import { deepStrictEqual } from 'assert'
 
-import App from './App'
+const testScheduler = new TestScheduler(deepStrictEqual)
 
-test('Render component', () => {
-    const component = renderer.create(<App />)
-    expect(component).toMatchSnapshot()
-})
+const epicLike = (action$: any) =>
+    action$.pipe(
+        delay(20),
+        map((a) => 'b')
+    )
 
-test('Confirm text', () => {
-    const component = render(<App />)
-    expect(component.getAllByText('Learn React')).toHaveLength(1)
+it('Check test response', async () => {
+    const input$ = '---a---a---a---a---'
+    const output$ = '---b---b---b---b---'
+    testScheduler
+        .expectObservable(epicLike(testScheduler.createHotObservable(input$)))
+        .toBe(output$)
+    // testScheduler.flush()
 })
